@@ -75,6 +75,8 @@ Node.js is a web hosted runtime environment for executing javascript based web a
 
 At first this will retrieve no results and may seem like a dead-end, but when we visit the service in a web browser we get a strange picture of a hexagon, therefore the content is available but our tools are being denied access. We will have to try harder.
 
+[hexagon]
+
 ### Request Analysis
 We need to know what is different about our enumeration tools request to find out why it is being returned a 404 response. A way to do this is by using a commonly deployed tool called burp suite, if you are attempting a machine at this level then you’ve likely used this before. 
 
