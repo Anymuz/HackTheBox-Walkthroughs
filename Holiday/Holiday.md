@@ -293,7 +293,7 @@ Now, let’s host our modified malicious ‘package.json’ file along with a co
 
 [wget_stuff]
 
-With a new listener running to receive connections on the port specified in the new shell on our attacking host, let’s now use the user shell we have to execute the command sudo /usr/bin/npm i [directory] --unsafe on the target. The command takes the directory the JSON package is in as an argument, npm can tell something is fishy and will refuse to run the command which is why we append ‘--unsafe’  to the command to make it ignore the risk. Once the npm command is executed via sudo it will automatically install the ‘package.json’ in that directory and in doing so will also start our newly uploaded shell with root permission.
+With a new listener running to receive connections on the port specified in the new shell on our attacking host, let’s now use the user shell we have to execute the command ``sudo /usr/bin/npm i [directory] --unsafe`` on the target. The command takes the directory the JSON package is in as an argument, npm can tell something is fishy and will refuse to run the command which is why we append ``--unsafe``  to the command to make it ignore the risk. Once the npm command is executed via sudo it will automatically install the ‘package.json’ in that directory and in doing so will also start our newly uploaded shell with root permission.
 
 [running_npm]
 
