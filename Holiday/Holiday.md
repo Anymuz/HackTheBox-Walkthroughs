@@ -293,13 +293,23 @@ The vulnerability with having the ‘npm i’ listed as NOPASSWD stems from it�
 
 [creating_JSON]
 
-First we shall create a JSON package in the expected format by using ``npm init`` as we only need sudo to use the ``npm -i`` feature, this will create an empty ‘package.json’ file for us. Since this is a simple shell with no job control it will be challenging to edit this file on our target. Instead we can manually copy the cat package.json output and paste it into a text editor on our attacking machine. Then we can add the command we want executed to our JSON file like shown below.
+First we shall create a JSON package in a new directory by using ``npm init`` as we only need sudo to use the ``npm -i`` feature, this will create an empty ‘package.json’ file for us, you may have to reopen your shell after doing this. Since this is a simple shell with no job control it will be challenging to edit this file on our target. Instead we can manually copy the cat package.json output and paste it into a text editor on our attacking machine. Then we can add the command we want executed to our JSON by replacing  ``"test": "echo \"Error: no test specified\" && exit 1"`` with ``"preinstall": "/bin/bash /home/algernon/app/anymuz/rootshell"``. Make sure it is within the ``"scripts"`` part of the JSON data, in this case the command will run bash on the new shell that we will download into the directory I created called 'anymuz'.
 
 ```
-vulnerable json
+{
+  "name": "anymuz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "preinstall": "/bin/bash /home/algernon/app/anymuz/rootshell"
+  },
+  "author": "",
+  "license": "ISC"
+}
 ```
 
-Now, let’s host our modified malicious ‘package.json’ file along with a copy of our original reverse shell bash script with a different port on our python server. Once our new files are hosted we can go back to the user shell and download both the new shell (which I named ‘rootshell’) and our malicious ‘package.json’ to a temporary directory using wget.
+Now, let’s host our modified malicious ‘package.json’ file along with a copy of our original reverse shell bash script with a different port on our python server. Once our new files are hosted we can go back to the user shell, remove the old 'package.json' file and then download both the new shell (which I named ‘rootshell’) and our malicious ‘package.json’ to the temporary directory using wget.
 
 [wget_stuff]
 
