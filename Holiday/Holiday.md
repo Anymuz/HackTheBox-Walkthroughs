@@ -95,7 +95,7 @@ A simple way to do this is to use SQL map to dump all the tables it can find. If
 
 The password hash for the RickA user is now leaked for us. This can take a while as there are additional tables in the database that have been occupied with data. Therefore a quicker way to do this on slower machines is to first dump the tables then dump only the user table, since it’s only login credentials that we’re interested in. To do this replace ``--dump-all`` with ``--tables`` in the command.
 
-![img](assets/[tables_sqlmap.png)
+![img](assets/tables_sqlmap.png)
 
 Now we can see the ‘users’ table that we’re interested in, we can specify dumping the data from this table by replacing --tables with -T users --dump in the command line. Either way a password hash is revealed to us. This hash has already been registered in online databases and so certain web based tools can find decrypt it such as https://hashes.com/en/decrypt/hash.
 
@@ -201,11 +201,11 @@ This suggests that the export file is executing a system command, such as sqllit
 
 Let’s try adding ``%3Bwhoami`` to the get request, the ‘%3B’ is URL encoding for the ‘;’ symbol. By adding this we are attempting to execute the ‘whoami’ command after the database query command has been executed, seeing the response will help determine how we can inject our own commands. 
 
-![img](assets/Invalid_table.png)
+![img](assets/invalid_table.png)
 
 It appears there are some filtering rules that allow only specific characters to be passed into the ‘export’ file. Interestingly, the ampersand symbol (&) is allowed. Consulting online sources such as https://www.tecmint.com/chaining-operators-in-linux-with-practical-examples/ will inform us that the ampersand symbol is a Linux command operator and we know already that the target is running Linux. The ampersand tells the Linux OS to execute that command in the background, we can also use it to execute multiple simultaneous commands in the background. This is how we will carry out the command injection.
 
-![img](assets/Request_id)
+![img](assets/request_id)
 
 We modify the request in burp to replace ‘bookings’ with ‘users%26id’, ‘%26’ is the URL encoding for the ampersand symbol. The file that is sent to us for download will now contain the user table entries as-well as the output from our ‘id’ command.
 
