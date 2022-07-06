@@ -62,7 +62,7 @@ The box holiday was originally given an insane difficulty rating during it’s a
 If you are attempting machines of this difficulty level then it is highly likely you have used these required reconnaissance tools beforehand. To enumerate this machine we will be using nmap, gobuster and burp suite, we will also be using dirb for demonstration purposes.
 
 ### Port Scanning
-As always, the best way to start is to find out what ports are open and if there is anything interesting running on them. Below you can see the results of using `nmap -T4 -sC -sV -p- [target IP]. Add -oN [filename]` to save the results and avoid having to scan again later.
+As always, the best way to start is to find out what ports are open and if there is anything interesting running on them. Below you can see the results of using ``nmap -T4 -sC -sV -p- [target IP]``. Add ``-oN [filename]`` to save the results and avoid having to scan again later.
 
 [nmap_scan]
 
@@ -104,7 +104,7 @@ When we visit the target via Firefox from Kali Linux, burp suite captures the re
 
 The enumeration is failing because the service is selectively providing content based on data provided in the request, this part of the request is always referred to as the user-agent and is often used to ensure compatibility between the client and the server with regards to browsers, versions and operating system. To understand more about the user-agent header and how to use it consult https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
 
-For our enumeration to work we need to add a specific string to the user agent request header, something in the browser user-agent header is being accepted by the service where gobuster is not. Through trial an error it can be deduced that the key word is “Linux”. To provide user agent data to our requests simply add ``–useragent “Linux”`` to the original gobuster command.
+For our enumeration to work we need to add a specific string to the user agent request header, something in the browser user-agent header is being accepted by the service where gobuster is not. Through trial an error it can be deduced that the key word is “Linux”. To provide user agent data to our requests simply add ``--useragent “Linux”`` to the original gobuster command.
 
 [gobuster_with_useragent]
 
@@ -133,13 +133,13 @@ None of the injection attempts at the password field work, however using ``admin
 
 This gives us a username and changes the error message to ‘Incorrect password’. We now know the SQL query is likely a vulnerability as the username field is injectable and has revealed database content to us, but our authentication bypass attempts via this vector are achieving nothing. This is a good time to use SQL map on the login form by first intercepting the POST request then running SQL map with that post request. We’ll use burp suite again to capture the request then we can manually copy this request and save it as a raw text file, I’ve named mine as login.req.
 
-[login.req]
+[login_req]
 
-A simple way to do this is to use SQL map to dump all the tables it can find. If trying the command sqlmap -r login.req  --dump-all returned no results, run a more intense scan by using ``sqlmap -r login.req --level=5 --risk=3 --dump-all --Threads=10``. Since intense scans can take longer I’ve specified 10 threads to speed the process up a little. SQL map will now run various injection attempts in the ‘username’ and ‘password’ fields, since these are defaults we don’t need to specify any fields for SQL map in the command. 
+A simple way to do this is to use SQL map to dump all the tables it can find. If trying the command sqlmap -r login.req  --dump-all returned no results, run a more intense scan by using ``sqlmap -r login.req --level=5 --risk=3 --dump-all --threads=10``. Since intense scans can take longer I’ve specified 10 threads to speed the process up a little. SQL map will now run various injection attempts in the ‘username’ and ‘password’ fields, since these are defaults we don’t need to specify any fields for SQL map in the command. 
 
 [password_sqlmap]
 
-The password hash for the RickA user is now leaked for us. This can take a while as there are additional tables in the database that have been occupied with data. Therefore a quicker way to do this on slower machines is to first dump the tables then dump only the user table, since it’s only login credentials that we’re interested in. To do this replace --dump-all with --tables in the command.
+The password hash for the RickA user is now leaked for us. This can take a while as there are additional tables in the database that have been occupied with data. Therefore a quicker way to do this on slower machines is to first dump the tables then dump only the user table, since it’s only login credentials that we’re interested in. To do this replace ``--dump-all`` with ``--tables`` in the command.
 
 [tables_sqlmap]
 
