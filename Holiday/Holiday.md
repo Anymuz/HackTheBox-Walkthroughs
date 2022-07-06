@@ -18,7 +18,7 @@ If you are attempting machines of this difficulty level then it is highly likely
 ### Port Scanning
 As always, the best way to start is to find out what ports are open and if there is anything interesting running on them. Below you can see the results of using ``nmap -T4 -sC -sV -p- [target IP]``. Add ``-oN [filename]`` to save the results and avoid having to scan again later.
 
-[nmap_scan]
+![img](assets/nmap_scan.png)
 
 The scan should reveal ports 22 and 8000 open. Port 22 is the default for SSH, however this SSH service is secured via passworded access. The scan also reveals port 8000 which is usually used for web server development environments or web administration, either way such services being open externally is not recommended. Therefore a HTTP service running on a port other than it’s default of 80 is usually worth investigating, we can also see it is running Node.js. 
 
