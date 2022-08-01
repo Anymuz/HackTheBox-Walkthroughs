@@ -70,13 +70,13 @@ The important information from this scan is regarding the Security Association (
 Since nothing was returned, it is safe to assume we will be working with IKE version 1.
 
 ### Connecting to IPSEC VPN with IKE
-Work in progress...
+Work in progress.
 
 ### Scanning TCP ports through IPSEC VPN
-Work in progress...
+Work in progress.
 
 ### Enumerating Web Service Directory
-Work in progress...
+Work in progress.
 
 ## Phase 2 – Exploitation
 COMING SOON!
