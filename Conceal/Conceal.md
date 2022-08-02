@@ -123,7 +123,15 @@ From the scan we can see a number of TCP ports are open. Of particular interest 
 From the example above, we can see that there is nothing in the FTP directory however we can upload our own files to it. Since we have a HTTP service open on port 80, we should try to enumerate the web directory to find any potential vulnerabilities.
 
 ### Enumerating Web Service Directory
-Work in progress...
+When we visit the target in a web browser all that can be seen is the default IIS page. If we enumerate the web directory with a tool of our choosing (dirb in this case) we can find something else. (NOTE: Somtimes the IPsec VPN connection will be closed by the target, when that happens redo the ``sudo ipsec up Conceal`` command.)
+
+![img](assets/dirb.png)
+
+Our enumeration reveals a ``/upload`` directory on the web server. We can visit this in the web browser and view the contents of this directory.
+
+![img](assets/upload-dir.png)
+
+What’s interesting here is that the test file uploaded via FTB is actually located in this directory as we can see from the screenshot. This means that we have the ability to upload files to the web server and potentially acquire ourselves a command injection vector. This is the route we need to go if we are to exploit this target machine.
 
 ## Phase 2 – Exploitation
 COMING SOON!
