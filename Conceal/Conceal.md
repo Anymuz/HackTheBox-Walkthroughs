@@ -131,7 +131,7 @@ Our enumeration reveals a ``/upload`` directory on the web server. We can visit 
 
 ![img](assets/upload-dir.png)
 
-What’s interesting here is that the test file uploaded via FTB is actually located in this directory as we can see from the screenshot. This means that we have the ability to upload files to the web server and potentially acquire ourselves a command injection vector. This is the route we need to go if we are to exploit this target machine.
+What’s interesting here is that the test file uploaded via FTB is actually located in this directory as we can see from the screenshot. This means that we have the ability to upload files to the web server and potentially acquire ourselves a command injection vector. This is the route we need to go if we are to exploit this target machine. The machine will on occasion clear the upload directory, so if attempting this machine and you cannot see this file then go back to the FTP anonymous and upload it again, it should appear. 
 
 ## Phase 2 – Exploitation
 COMING SOON!
