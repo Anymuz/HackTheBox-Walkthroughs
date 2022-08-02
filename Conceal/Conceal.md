@@ -4,10 +4,10 @@
 COMING SOON!
 
 ## Phase 1 - Reconnaissance
-The initial enumeration stage of this machine isn’t as straightforward as previous machines which is one of the many reasons this machine earned it’s hard difficulty rating. As usual we will start with nmap, however there are some initial set-ups that are required before we can enumerate all of the TCP ports on this machine. The enumeration phase for this machine will take us through some IPSEC via UDP port scanning, key exchange protocols and Simple Network Management Protocol (SNMP).
+The initial enumeration stage of this machine isn’t as straightforward as previous machines which is one of the many reasons this machine earned it’s hard difficulty rating. As usual we will start with nmap, however there are some initial set-ups that are required before we can enumerate all of the TCP ports on this machine. The enumeration phase for this machine will take us through setting up an IPsec VPN via UDP port scanning, key exchange protocols and exploiting the Simple Network Management Protocol (SNMP).
 
 ### Initial Port Scan
-We can start by using our usual nmap command,  my go to usage of nmap is ``nmap -T4 -sC -sV [target-IP] -oN Conceal.nmap`` with the IP of our target. However the initial scan is being blocked, although we will be able to ping the target, using nmap currently yields the following result:
+We can start by using our usual Nmap command, my go to usage of Nmap is ``nmap -T4 -sC -sV [target-IP] -oN Conceal.nmap`` with the IP of our target. However the initial scan is being blocked, although we are able to ping the target, using Nmap currently yields the following result:
 
 ![img](assets/nmap_scan_1.png)
 
@@ -24,13 +24,13 @@ For the next scan we are going to see if there are any UDP ports open on the tar
 
 The scan revealed UDP port 500 running a ISAKMP service. ISAKMP stands for Internet Security Association and Key Management Protocol, it serves as a common framework for defining the agreed formats and procedures for authenticating a communication peer and for the creation and management for security associations, key generation techniques, and to mitigate threats such as DoS and replay attacks. ISAKMP is used to implement the Microsoft Windows IPSEC service. More information can be found at https://en.wikipedia.org/wiki/Internet_Security_Association_and_Key_Management_Protocol.
 
-It appears from this information and our scan that UDP 500 is being used to run an IPSEC VPN service on this machine which is likely the reason we cannot conduct a TCP port scan with NMAP, since TCP connections are probably restricted to this IPSEC VPN. ISAKMP needs to be implemented alongside protocols that provide the authenticated keying material such as Internet Key Exchange (IKE) or Kerberized Internet Negotiation of Keys (KINK).  We can attempt to find the Key Exchange protocol being used with nmap again but this time we will run script and service scans against only the UDP port 500 with ``sudo nmap -sC -sV -sU -p500 [target-IP]``. I’ll be saving the output for later with ``-oN``.
+It appears from this information and our scan that UDP 500 is being used to run an IPSEC VPN service on this machine which is likely the reason we cannot conduct a TCP port scan with Nmap, since TCP connections are probably restricted to this IPSEC VPN. ISAKMP needs to be implemented alongside protocols that provide the authenticated keying material such as Internet Key Exchange (IKE) or Kerberized Internet Negotiation of Keys (KINK).  We can attempt to find the Key Exchange protocol being used with nmap again but this time we will run script and service scans against only the UDP port 500 with ``sudo nmap -sC -sV -sU -p500 [target-IP]``. I’ll be saving the output for later with ``-oN``.
 
 ![img](assets/nmap_scan_UDP_2.png)
 
 Like my situation, your nmap scan may be unable to find any additional information about this UDP port because nmap scans rely heavily on a handshake to determine if a port is open, therefore it is notoriously unreliable with UDP. In order to progress we’ll need to scan the target fully to see if there are any additional services that are open.
 
-Unfortunately this time there is no way for us to avoid the long scan duration that results from running scripts against all potential ports, this is because those scripts are more likely to get a response from open ports than the basic nmap scan itself.  You can leave the scan running for a long time and scan all of the ports with the default scripts, alternatively NMAP allows us to scan the top commonly used ports. So for the next attempt we will scan the top 20 ports and run the default scripts with our scan. To achieve this we can use ``sudo nmap -T4 -sC -sU --top-ports 20 [target-IP] -oN conceal_UDP_top20.nmap --min-rate=10000``. The scan will still take a while even with ``-T4`` and ``min-rate=10000``, mine took almost 5 minutes, so best to go make a coffee or have a snack while we wait.
+Unfortunately this time there is no way for us to avoid the long scan duration that results from running scripts against all potential ports, this is because those scripts are more likely to get a response from open ports than the basic nmap scan itself.  You can leave the scan running for a long time and scan all of the ports with the default scripts, alternatively Nmap allows us to scan the top commonly used ports. So for the next attempt we will scan the top 20 ports and run the default scripts with our scan. To achieve this we can use ``sudo nmap -T4 -sC -sU --top-ports 20 [target-IP] -oN conceal_UDP_top20.nmap --min-rate=10000``. The scan will still take a while even with ``-T4`` and ``min-rate=10000``, mine took almost 5 minutes, so best to go make a coffee or have a snack while we wait.
 
 ![img](assets/nmap_scan_UDP_top20.png)
 
@@ -45,14 +45,13 @@ We can use SNMPwalk with  the ``snmpwalk`` command, we need to specify a version
 
 ![img](assets/snmpwalk.png)
 
-There is a considerably large output from this command, thankfully the information we are interested in is at the top. From the SNMP enumeration we can see some hardware and software information, but most interestingly we see two strings which reveal a possible name ``STRING: “Conceal” `` and a password ``STRING: “IKE VPN password PSK - 9C8B1A372B1878851BE2C097031B6E43``. 
+There is a considerably large output from this command, thankfully the information we are interested in is at the top. From the SNMP enumeration we can see some hardware and software information, but most interestingly we see two strings which reveal a possible name ``STRING: “Conceal” `` and a password ``STRING: “IKE VPN password PSK - 9C8B1A372B1878851BE2C097031B6E43"``. 
 
 The hash provided `` 9C8B1A372B1878851BE2C097031B6E43`` has 32 characters suggesting either an MD5 or NTLM format. This hash is stored in the databases of various online decoder tools such as the one at https://hashes.com/en/decrypt/hash. 
 
 ![img](assets/hash_decode.png)
 
-We decode it as ``Dudecake1!``, giving us a password for the IKE VPN that we’ll likely need to connect to the target machine.
-The string that provided the hash also revealed that the password is used for a IKE VPN…
+We decode it as ``Dudecake1!``, giving us a password for the IKE VPN that we’ll likely need to connect to the target machine. The string that provided the hash also revealed that the password is used for a IKE VPN…
 
 ### Internet Key Exchange (IKE)
 From our SNMP scan it is revealed that the ISAKMP service we scanned on UDP 500 is likely using IKE to establish an IPSEC VPN. This information is supported by the fact that UDP port 500 is commonly used for IKE. Information about IKE can be found at https://en.wikipedia.org/wiki/Internet_Key_Exchange.
@@ -69,10 +68,50 @@ The important information from this scan is regarding the Security Association (
 
 Since nothing was returned, it is safe to assume we will be working with IKE version 1.
 
-### Connecting to IPSEC VPN with IKE
-Work in progress...
+### Connecting to IPsec VPN with IKE
+Internet Protocol Security (IPsec) is a IP-layer protocol suite used in virtual private networks (VPNs) that provides authentication and packet encryption to facilitate secure and encrypted communication between computers on a network. IPsec comprises of three types of protocol: Authentication Header (AH) authenticates the source and ensures the integrity of data packets but doesn’t provide any encryption to conceal the data, alternatively the Encapsulating Security Protocol (ESP) encrypts the payload and in some modes the IP header of a data packet by encapsulating that encrypted packet within it’s own header and trailer. Either AH or ESP will be used in conjunction with a Security Association (SA), which is used for negotiating encryption algorithms and keys, the most common of which is IKE which we are dealing with. We have already gathered information about the SA being used with this IPsec implementation.
 
-### Scanning TCP ports through IPSEC VPN
+IPsec operates in either tunnel mode or transport mode. Tunnel mode is used for networks, in this mode the IP header is encrypted with the payload, IPsec adds an additional IP header so intermediate routers can forward packets still, but only routers at the end of the tunnel will decrypt the original IP header to deliver the packet to it’s final destination, thus obfuscating the origin and destination of each data packet. However in our case we will be using transport mode, as it provides security between two hosts by encrypting the payload of each packet but leaving the IP headers so that each packet can be routed as normal. More information about IPsec can be found at https://www.cloudflare.com/en-gb/learning/network-layer/what-is-ipsec/. To set up our IPsec VPN connection we will be using a tool called strongSwan. 
+
+![img](assets/install-ss.png) 
+
+For it to work with the triple DES encryption algorithm, we will need to install some additional plugins using ``sudo apt install libstrongswan-standard-plugins libstrongswan-extra-plugins``.
+
+![img](assets/install-ss-plugins.png) 
+
+To set up our IPsec VPN connection we need to first do some configuration of the IPsec configuration files ``/etc/ipsec.secrets`` and ``/etc/ipsec.conf``, information about these storngSwan configuration files can be found on their official wiki at https://wiki.strongswan.org/projects/strongswan/wiki/ConfigurationFiles. According to the documentation for ``ipsec.secrets`` we need to add our PSK and destination to this file, since the IP of our target can change if we switch machines on the VPN we can use ``%any`` to match our PSK with any IPsec VPN destination, we already decoded the PSK as being ``Dudecake1!``. Below is my ``ipsec.secrets`` file.
+
+```
+# This file holds shared secrets or RSA private keys for authentication.
+
+%any : PSK "Dudecake1!"
+
+# RSA private key for this host, authenticating it to any other host
+# which knows the public part.
+```
+
+Now we need to set up a configuration in ``ipsec.conf`` for our connection, this part can be a bit tricky and require some research, the wiki linked above can help with understanding the parameters. We have already gathered enough information to make a basic configuration out of some parameters: We know we should use transport mode, key exchange is ikev1, we know the IP of the target (it’s 10.129.33.27 in my case), it’s using PSK authentication, for TCP protocols (we can already scan UDP) and we know the SA algorithms for our IKE from the ``ike-scan``. If we consult https://www.ibm.com/docs/no/zos/2.2.0?topic=ipsec-ah-esp-protocols we can see that our encryption algorithm (triple DES) only works for the ESP encryption protocol and our authentication algorithm (SH1) with either the ESP or AH authentication protocol, but strongSwan does not support AH and ESP bundles so we will be using ESP for both. Adding ``auto=start`` means when we start the IPsec it will load and connect immediately. With this knowledge we can construct the following configuration for a connection named ``Conceal`` and add it to our ``/etc/ipsec.conf`` file:
+
+```
+conn Conceal
+        type=transport
+        keyexchange=ikev1
+        right=10.129.33.27
+        authby=psk
+        rightprotoport=tcp
+        leftprotoport=tcp
+        esp=3des-sha1!
+        ike=3des-sha1-modp1024!
+        auto=start
+```
+
+Start the strongSwan service with ``sudo ipsec start --no-fork``, adding ``--nofork`` can help with debugging, then load the VPN configuration with ``sudo ipsec up Conceal``. It may take some trial and error to get this configuration correct, if you do receive an error be sure to restart after each change with ``sudo ipsec restart`` before starting the connection again. It may also be helpful to add the line ``charondebug=”all”`` for further help with troubleshooting, but the configuration above should work.
+
+![img](assets/start-vpn.png)
+
+The output ``Conceal established…`` confirms that we are now connected to the IPsec VPN and can send TCP packets to our target. To disable the VPN just use ``sudo ipsec stop``.
+
+### Scanning TCP ports through IPsec VPN
 Work in progress...
 
 ### Enumerating Web Service Directory
