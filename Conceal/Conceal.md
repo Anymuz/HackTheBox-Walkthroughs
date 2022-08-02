@@ -109,10 +109,18 @@ Start the strongSwan service with ``sudo ipsec start --no-fork``, adding ``--nof
 
 ![img](assets/start-vpn.png)
 
-The output ``Conceal established…`` confirms that we are now connected to the IPsec VPN and can send TCP packets to our target. To disable the VPN just use ``sudo ipsec stop``.
+The output ``connection 'Conceal' established successfully`` confirms that we are now connected to the IPsec VPN and can send TCP packets to our target. To disable the VPN once finished just use ``sudo ipsec stop``.
 
 ### Scanning TCP ports through IPsec VPN
-Work in progress...
+The IPsec service was restricting all TCP data packets being sent to and from the target machine, since our original Nmap requests were unauthorised our initial scan for open TCP ports failed. Now that we have our IPsec VPN running we can finally send authorized TCP packets to the target allowing us to complete our Nmap scan.
+
+![img](assets/nmap-tcp-working.png)
+
+From the scan we can see a number of TCP ports are open. Of particular interest to us is the FTP service on port 21 and the HTTP service on port 80. Our script scans revealed that the anonymous FTP login is enabled, giving us an authorised connection to the FTP server where we can potentially view and upload files.
+
+![img](assets/ftp-test.png)
+
+From the example above, we can see that there is nothing in the FTP directory however we can upload our own files to it. Since we have a HTTP service open on port 80, we should try to enumerate the web directory to find any potential vulnerabilities.
 
 ### Enumerating Web Service Directory
 Work in progress...
