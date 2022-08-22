@@ -172,7 +172,7 @@ ASP files are HTML files but can parse tags to reference scripts. Our script fir
 
 To test it we just upload the script to the FTP directory then when we request the asp file we include our command as the query string, I name it ‘wshell.asp’ so the URI of our request will be ``wshell.asp?cmd=whoami`` if we want to execute the ``whoami`` command.
 
-![img](assets/curl_URL.png) [todo]
+![img](assets/curl_URL.png)
 
 Now we can execute commands on the web server by either manually visiting the page or using curl like shown above. However this shell is highly limited and there are very few commands we are able to execute.
 To see more of how to use ASP with VBscript then see the examples at https://www.w3schools.com/asp/asp_examples.asp, VBScript is used in many Microsoft scripting situations, it allows Windows users to script powerful tools for managing their systems, therefore being able to interpret and understand it’s syntax can be beneficial when penetration testing windows target hosts: https://www.tutorialspoint.com/vbscript/index.htm
