@@ -1,7 +1,7 @@
 # Postman
 
 ## Introduction
-This walk-through contains the methods I used to get first blood for root on this box, I wrote it in an attempt to explain what's going on with the exploit route. First we will be exploiting unauthorized access to the Redis data structure storage tool to dump our own SSH keys onto the target, the privilege escalation involves adopting and deploy PoC exploits for a Common Vulnerabilities and Exposures entry.
+This walk-through contains the methods I used to get root on this box, I wrote this originally in an attempt to understand what's going on with the exploit route. At first this machine was confuding but once you find the online resources and know what tools to apply the exploitation is straight forward to carry out. After enumeration we will be exploiting unauthorized access to the Redis data structure storage tool to dump our own SSH keys onto the target, then through enumeration we can progress to user, the privilege escalation finishes off by adopting and utlising the exploit method for a Common Vulnerabilities and Exposures (CVE) entry for Webmin.
 
 | Skills Required | Skills Learned |
 | ----- | ----------------------------------- |
