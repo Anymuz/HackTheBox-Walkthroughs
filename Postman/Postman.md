@@ -1,7 +1,7 @@
 # Postman
 
 ## Introduction
-This walk-through contains the methods I used to get root on this box, I wrote this originally in an attempt to understand what's going on with the exploit route. At first this machine was confuding but once you find the online resources and know what tools to apply the exploitation is straight forward to carry out. After enumeration we will be exploiting unauthorized access to the Redis data structure storage tool to dump our own SSH keys onto the target, then through enumeration we can progress to user, the privilege escalation finishes off by adopting and utlising the exploit method for a Common Vulnerabilities and Exposures (CVE) entry for Webmin.
+This walk-through contains the methods I used to get root on this box, the main content was written shortly after the boxes reslease in an attempt to understand what's going on with the exploit route but was never made public until now. At first this machine may be confusing but once you find the online resources and know what tools to apply the exploitation is straight forward to carry out. After enumeration we will be exploiting unauthorized access to the Redis data structure storage tool to dump our own SSH keys onto the target, then through enumeration we can progress to user, the privilege escalation finishes off by adopting and utlising the exploit method for a Common Vulnerabilities and Exposures (CVE) entry for Webmin.
 
 | Skills Required | Skills Learned |
 | ----- | ----------------------------------- |
@@ -26,7 +26,7 @@ Redis is a data management software that can act as a data store and a database,
 To exploit this machine we will be using a method which allows us to use Redis to dump our own SSH id_rsa key into the authorized keys file of the Redis system user, however this alone isn’t enough to gain user privilege over the machine, so the exploitation will then require some enumeration and brute-force hash cracking to gain access to the user flag.
 
 ### Exploiting Unauthorized Redis Connection
-When researching methods to exploit Redis to compromise a system, we can find a method written about by someone known as Antirez, their method of exploitation can be found on Packet Storm following this link: https://packetstormsecurity.com/files/134200/Redis-Remote-CommandExecution.html 
+When researching methods to exploit Redis to compromise a system, we can find a method written by someone known as Antirez, their method of exploitation can be found on Packet Storm following this link: https://packetstormsecurity.com/files/134200/Redis-Remote-CommandExecution.html 
 
 The method involves using our access to Redis in order to dump our own id_rsa key into the authorized keys file for the Redis user, this should give us the ability to connect to the machine via SSH on the Redis user account. We can test if we have access to using the Redis Command Line Interface (CLI) by seeing if we can telnet into the port. 
 
@@ -112,4 +112,4 @@ Now we can get our root flag and complete the machine.
 ![img](assets/root.png)
 
 ## Conclusion
-In this machine we learned how to gain access to a target via unauthorized access to an external Redis service, unfortunately this isn’t the most realistic of scenarios as to have Redis open to the external network is an almost deliberate act of self sabotage, however it is still an enjoyable machine and a worthwhile technique for understanding how data store management systems can be exploited. The privilege escalation allows us to practice identifying and deploying exploits for Common Vulnerabilities and Exposures (CVE) entries for outdated software.
+In this machine we learned how to gain access to a target via unauthorized access to an external Redis service, this isn’t the most realistic of scenarios as for any administrators to have Redis open to the external network is esentially self sabotage, however it is still an enjoyable machine and a worthwhile technique for understanding how data store management systems can be exploited. The privilege escalation allows us to practice identifying and deploying exploits for Common Vulnerabilities and Exposures (CVE) entries for outdated software.
