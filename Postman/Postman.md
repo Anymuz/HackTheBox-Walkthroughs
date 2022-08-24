@@ -1,7 +1,7 @@
 # Postman
 
 ## Introduction
-This box appears to be difficult at first, especially if you don’t know where to go first however once the methods of access are known they are relatively straight forward. This walk-through contains the methods I used to get first blood for root on this box, I wrote it in an attempt to explain what's going on with the exploit route. First we will be exploiting unauthorized access to the Redis data structure storage tool to dump our own SSH keys onto the target, the privilege escalation involves adopting and deploy PoC exploits for a Common Vulnerabilities and Exposures entry.
+This walk-through contains the methods I used to get first blood for root on this box, I wrote it in an attempt to explain what's going on with the exploit route. First we will be exploiting unauthorized access to the Redis data structure storage tool to dump our own SSH keys onto the target, the privilege escalation involves adopting and deploy PoC exploits for a Common Vulnerabilities and Exposures entry.
 
 | Skills Required | Skills Learned |
 | ----- | ----------------------------------- |
