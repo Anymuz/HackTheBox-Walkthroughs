@@ -93,7 +93,7 @@ First we need to edit the script to have our IP address and our chosen listener 
 ![img](assets/path_hijack.png)
 
 
-If we start our listener then use separate terminal window to connect to SSH with jkr@10.10.10.138 we can spawn ourselves a shell with root permissions and use it to acquire the root flag.
+If we start our listener then use separate terminal window to connect to SSH with ``ssh jkr@[target IP]`` we can spawn ourselves a shell with root permissions and use it to acquire the root flag.
 
 ![img](assets/root.png)
 
