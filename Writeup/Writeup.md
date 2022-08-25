@@ -11,7 +11,7 @@ Despite it’s easy rating, this box has a DoS protection system in place that p
 NOTE: Thanks to recent updates to burp suite, the enumeration method for this box is only available on versions of burpe suite 1.7.36 and below unless you pay for the professional or enterprise edition. Burp suite community version 1.7.36 with the spider feature can be downloaded from https://portswigger.net/burp/releases/professional-community-1-7-36. There are alternative tools available that can bypass the DoS protection for enumeration such as ZAP https://www.kali.org/tools/zaproxy/.
 
 ## Phase 1 – Reconnaissance
-Due to the DoS protection in place, the reconnaissance phase involves a port scan and manual enumeration of the services running as the use of tools such as ``dirb`` are limited.
+Due to the DoS protection in place, the reconnaissance phase involves a port scan and burp suite enumeration of the web service running. This is because the use of tools such as ``dirb`` are limited.
 
 ### Port Scanning
 Nmap scan using ``nmap -T4 -sC -sV -p- [target ip]`` reveals a web server on port 80 and an SSH service on port 22. By adding ``-oN [filename]`` we can save the scan results to look at later.
