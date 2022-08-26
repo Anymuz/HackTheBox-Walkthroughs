@@ -1,23 +1,23 @@
 # Conceal
 
 ## Introduction
-This machine is rated as hard difficulty and for good reason, the machine is long and requires a lot of techniques to fully exploit however it is a worthwhile adventure. The machine requires us to enumerate the Internet Key Exchange (IKE) protocol and set up a IPSec transport mode VPN just to carry out the necessary reconnaissance. We will then need to upload shell scripts via two vulnerable services (HTTP and FTP). The privilege escalation has two methods, one requires us to list the hoxfixes to identify an ALPC Task Scheduler Local Procedure Call (LPC) vulnerability, the other is to obtain a SYSTEM shell via SeImpersonatePrivilege. 
+This machine is rated as hard difficulty and for good reason, the machine is long and requires a lot of techniques to fully exploit however it is a worthwhile adventure. The machine requires us to enumerate the Internet Key Exchange (IKE) protocol and set up a IPsec transport mode VPN just to carry out the necessary reconnaissance. We will then need to upload shell scripts via two vulnerable services (HTTP and FTP). The privilege escalation has two methods, one requires us to list the hoxfixes to identify an ALPC Task Scheduler Local Procedure Call (LPC) vulnerability, the other is to obtain a SYSTEM shell via SeImpersonatePrivilege. 
 
 | Skills Required | Skills Learned |
 | ----- | ----------------------------------- |
 | Understand Networking Protocols | IKE Configuration |
-| Enumerating Windows | Using IPSec |
+| Enumerating Windows | Using IPsec |
 
 
 ## Phase 1 - Reconnaissance
 The initial enumeration stage of this machine isn’t as straightforward as previous machines which is one of the many reasons this machine earned it’s hard difficulty rating. As usual we will start with nmap, however there are some initial set-ups that are required before we can enumerate all of the TCP ports on this machine. The enumeration phase for this machine will take us through some IPSEC via UDP port scanning, key exchange protocols and Simple Network Management Protocol (SNMP).
 
 ### Initial Port Scan
-We can start by using our usual nmap command,  my go to usage of nmap is ``nmap -T4 -sC -sV [target-IP] -oN Conceal.nmap`` with the IP of our target. However the initial scan is being blocked, although we will be able to ping the target, using nmap currently yields the following result:
+We can start by using our usual Nmap command, my go to usage of Nmap is ``nmap -T4 -sC -sV [target-IP] -oN Conceal.nmap`` with the IP of our target. However the initial scan is being blocked, although we will be able to ping the target, using nmap currently yields the following result:
 
 ![img](assets/nmap_scan_1.png)
 
-When this happens, it can sometimes be because the host is blocking the probes, nmap suggests using ``-Pn`` instead of ``-p-`` in order to skip host discovery and instead scan only the ports. This can take a while so I recommend also adding ``--min-rate=1000`` to our command to ensure at least 1000 packets are sent per second.
+When this happens, it can sometimes be because the host is blocking the probes, Nmap suggests using ``-Pn`` instead of ``-p-`` in order to skip host discovery and instead scan only the ports. This can take a while so I recommend also adding ``--min-rate=1000`` to our command to ensure at least 1000 packets are sent per second.
 
 ![img](assets/nmap_scan_2.png)
 
@@ -30,11 +30,11 @@ For the next scan we are going to see if there are any UDP ports open on the tar
 
 The scan revealed UDP port 500 running a ISAKMP service. ISAKMP stands for Internet Security Association and Key Management Protocol, it serves as a common framework for defining the agreed formats and procedures for authenticating a communication peer and for the creation and management for security associations, key generation techniques, and to mitigate threats such as DoS and replay attacks. ISAKMP is used to implement the Microsoft Windows IPSEC service. More information can be found at https://en.wikipedia.org/wiki/Internet_Security_Association_and_Key_Management_Protocol.
 
-It appears from this information and our scan that UDP 500 is being used to run an IPSEC VPN service on this machine which is likely the reason we cannot conduct a TCP port scan with NMAP, since TCP connections are probably restricted to this IPSEC VPN. ISAKMP needs to be implemented alongside protocols that provide the authenticated keying material such as Internet Key Exchange (IKE) or Kerberized Internet Negotiation of Keys (KINK).  We can attempt to find the Key Exchange protocol being used with nmap again but this time we will run script and service scans against only the UDP port 500 with ``sudo nmap -sC -sV -sU -p500 [target-IP]``. I’ll be saving the output for later with ``-oN``.
+It appears from this information and our scan that UDP 500 is being used to run an IPSEC VPN service on this machine which is likely the reason we cannot conduct a TCP port scan with Nmap, since TCP connections are probably restricted to this IPSEC VPN. ISAKMP needs to be implemented alongside protocols that provide the authenticated keying material such as Internet Key Exchange (IKE) or Kerberized Internet Negotiation of Keys (KINK).  We can attempt to find the Key Exchange protocol being used with nmap again but this time we will run script and service scans against only the UDP port 500 with ``sudo nmap -sC -sV -sU -p500 [target-IP]``. I’ll be saving the output for later with ``-oN``.
 
 ![img](assets/nmap_scan_UDP_2.png)
 
-Like my situation, your nmap scan may be unable to find any additional information about this UDP port because nmap scans rely heavily on a handshake to determine if a port is open, therefore it is notoriously unreliable with UDP. In order to progress we’ll need to scan the target fully to see if there are any additional services that are open.
+Like my situation, your Nmap scan may be unable to find any additional information about this UDP port because nmap scans rely heavily on a handshake to determine if a port is open, therefore it is notoriously unreliable with UDP. In order to progress we’ll need to scan the target fully to see if there are any additional services that are open.
 
 Unfortunately this time there is no way for us to avoid the long scan duration that results from running scripts against all potential ports, this is because those scripts are more likely to get a response from open ports than the basic nmap scan itself.  You can leave the scan running for a long time and scan all of the ports with the default scripts, alternatively NMAP allows us to scan the top commonly used ports. So for the next attempt we will scan the top 20 ports and run the default scripts with our scan. To achieve this we can use ``sudo nmap -T4 -sC -sU --top-ports 20 [target-IP] -oN conceal_UDP_top20.nmap --min-rate=10000``. The scan will still take a while even with ``-T4`` and ``min-rate=10000``, mine took almost 5 minutes, so best to go make a coffee or have a snack while we wait.
 
@@ -65,7 +65,7 @@ From our SNMP scan it is revealed that the ISAKMP service we scanned on UDP 500 
 
 Kali Linux comes with a tool called ``ike-scan`` that can both be used to discover which hosts are running IKE and also for determining which IKE implementation the hosts a running. It does this by recording the times of the IKE response packets from the target hosts and comparing the retransmission patterns against known patterns. The official documentation can be read at https://www.kali.org/tools/ike-scan/.
 
-We will need to use ``ike-scan`` to acquire important information that will allow us to connect to the IPSEC VPN which should give us access to the TCP ports and therefore the ability to scan them with ``nmap``. This can be done by using the command ``sudo ike-scan -M [target-IP]``. It’s stated in the documents that adding ``-M`` will split the decoded result for each request payload onto seperate lines to make it easier to read.
+We will need to use ``ike-scan`` to acquire important information that will allow us to connect to the IPSEC VPN which should give us access to the TCP ports and therefore the ability to scan them with Nmap. This can be done by using the command ``sudo ike-scan -M [target-IP]``. It’s stated in the documents that adding ``-M`` will split the decoded result for each request payload onto seperate lines to make it easier to read.
 
 ![img](assets/ike-scan.png)
 
@@ -75,7 +75,7 @@ The important information from this scan is regarding the Security Association (
 
 Since nothing was returned, it is safe to assume we will be working with IKE version 1.
 
-### Connecting to IPSEC VPN with IKE
+### Connecting to IPsec VPN with IKE
 Internet Protocol Security (IPsec) is a IP-layer protocol suite used in virtual private networks (VPNs) that provides authentication and packet encryption to facilitate secure and encrypted communication between computers on a network. IPsec comprises of three types of protocol: Authentication Header (AH) authenticates the source and ensures the integrity of data packets but doesn’t provide any encryption to conceal the data, alternatively the Encapsulating Security Protocol (ESP) encrypts the payload and in some modes the IP header of a data packet by encapsulating that encrypted packet within it’s own header and trailer. Either AH or ESP will be used in conjunction with a Security Association (SA), which is used for negotiating encryption algorithms and keys, the most common of which is IKE which we are dealing with. We have already gathered information about the SA being used with this IPsec implementation.
 
 IPsec operates in either tunnel mode or transport mode. Tunnel mode is used for networks, in this mode the IP header is encrypted with the payload, IPsec adds an additional IP header so intermediate routers can forward packets still, but only routers at the end of the tunnel will decrypt the original IP header to deliver the packet to it’s final destination, thus obfuscating the origin and destination of each data packet. However in our case we will be using transport mode, as it provides security between two hosts by encrypting the payload of each packet but leaving the IP headers so that each packet can be routed as normal. More information about IPsec can be found at https://www.cloudflare.com/en-gb/learning/network-layer/what-is-ipsec/. To set up our IPsec VPN connection we will be using a tool called strongSwan. 
@@ -118,7 +118,7 @@ Start the strongSwan service with ``sudo ipsec start --no-fork``, adding ``--nof
 
 The output ``Conceal established…`` confirms that we are now connected to the IPsec VPN and can send TCP packets to our target. To disable the VPN just use ``sudo ipsec stop``.
 
-### Scanning TCP ports through IPSEC VPN
+### Scanning TCP ports through IPsec VPN
 The IPsec service was restricting all TCP data packets being sent to and from the target machine, since our original Nmap requests were unauthorised our initial scan for open TCP ports failed. Now that we have our IPsec VPN running we can finally send authorized TCP packets to the target allowing us to complete our Nmap scan.
 
 ![img](assets/nmap-tcp-working.png)
@@ -177,9 +177,9 @@ response.write outputString ' Output the string that comes of our command execut
 
 ASP files are HTML files but can parse tags to reference scripts. Our script first needs to use the ASP script tags ``<%`` and ``%>``, we can also include HTML formatting however we just need to input command and output response so to save time there is no need for it to be included. We can specify the command to execute via the HTTP request query string, e.g ``wshell?cmd=[command]``. The request ASP object has a method for retrieving query string values so by using ``Request.QueryString(“cmd”)`` we can retrieve the command we wish to execute.  Using the Wscript root object that is always instantiated when a windows script is run, we create a new windows shell object by creating an instance from ``WScript.Shell``. To create an object in VBScript syntax we must use ``set``. We can now use ``Exec()`` method of our shell to execute the command. To know the output we use the ``StdOut`` property inherited from the WScript object to return a text stream object. With the ``ReadAll()`` method available for all text stream objects, we can parse the output steam as a string. Finally to read the command output we need to send it as the HTTP response, so ``Response.write OutputString`` will return the output from our shell executing the query string as the HTTP response.
 
-To test it we just upload the script to the FTP directory then when we request the asp file we include our command as the query string, I name it ‘wshell.asp’ so the URI of our request will be ``wshell.asp?cmd=whoami’’ if we want to execute the ``whoami`` command.
+To test it we just upload the script to the FTP directory then when we request the asp file we include our command as the query string, I name it ‘wshell.asp’ so the URI of our request will be ``wshell.asp?cmd=whoami`` if we want to execute the ``whoami`` command.
 
-![img](assets/curl_URL.png) [todo]
+![img](assets/curl_URL.png)
 
 Now we can execute commands on the web server by either manually visiting the page or using curl like shown above. However this shell is highly limited and there are very few commands we are able to execute.
 To see more of how to use ASP with VBscript then see the examples at https://www.w3schools.com/asp/asp_examples.asp, VBScript is used in many Microsoft scripting situations, it allows Windows users to script powerful tools for managing their systems, therefore being able to interpret and understand it’s syntax can be beneficial when penetration testing windows target hosts: https://www.tutorialspoint.com/vbscript/index.htm
@@ -199,7 +199,7 @@ Since our ASP shell uses query string, every space in the command must be replac
 
 ![img](assets/python_get.png)
 
- Then provided a listener was running on the specified port from earlier we will have our interactive shell which allows us access to the user flag.
+Then provided a listener was running on the specified port from earlier we will have our interactive shell which allows us access to the user flag.
  
 ![img](assets/user.png)
 
@@ -215,4 +215,4 @@ In progress...
 In progress...
 
 ## Conclusion
-In this machine we learned about the IKE protocol and how to use IPSec in order to subvert firewall restrictions for TCP connections. Then through vulnerable FTP anonymous user that uploads to a web service we are able to upload an ASP web shell and get basic command execution. Using this web shell we can upload a PowerShell script that gives us a user shell. Finally there are two routes that can be taken for privilege escalation, one by making use of a Common Vulnerabilities and Exposures (CVE) entry, the other by using Juicy Potato to exploit the user having SeImpersonatePrivilege enabled. Overall a very interesting box which requires an entire technique just to scan TCP ports, a long but rewarding challenge with a fairly realistic scenario.
+In this machine we learned about the IKE protocol and how to use IPsec in order to subvert firewall restrictions for TCP connections. Then through vulnerable FTP anonymous user that uploads to a web service we are able to upload an ASP web shell and get basic command execution. Using this web shell we can upload a PowerShell script that gives us a user shell. Finally there are two routes that can be taken for privilege escalation, one by making use of a Common Vulnerabilities and Exposures (CVE) entry, the other by using Juicy Potato to exploit the user having SeImpersonatePrivilege enabled. Overall a very interesting box which requires an entire technique just to scan TCP ports, a long but rewarding challenge with a fairly realistic scenario.
