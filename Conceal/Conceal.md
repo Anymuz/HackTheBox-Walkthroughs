@@ -206,7 +206,7 @@ Then provided a listener was running on the specified port from earlier we will 
 Occasionally the IPSec VPN connection will close meaning it may be worth crafting a script that automates this process, especially as the upload directory is purged regularly too.
 
 ## Phase 3 - Privilege Escalation
-Privilege Escalation on this machine has two routes. The first route we will cover involves enumerating the target to find no patches listed next to ‘Hotfix(s)’, then coupled with online research into this build of windows 10 we can find it is vulnerable to ALPC Task Scheduler LPE (CVE-2018-8440).  The alternative route is to notice that the user we compromised has SeImpersonatePrivilege enabled which means we can use a tool called ‘Juicy Potato’ to change the administrator password and gain SYSTEM access.
+Privilege Escalation on this machine has two routes. The first route we will cover involves enumerating the target to find no patches listed next to ‘Hotfix(s)’, then coupled with online research into this build of windows 10 we can find it is vulnerable to ALPC Task Scheduler LPE (CVE-2018-8440).  The alternative route is to notice that the user we compromised has SeImpersonatePrivilege enabled which means we can use a tool called ‘Juicy Potato’ to spawn a shell with SYSTEM access.
 
 ### ALPC Task Scheduler LPE
 This privilege escalation route is a little bit more difficult to notice however tools that can be compiled in windows environments like Watson can help in identifying a CVE vulnerability in this target. Enumeration isn’t just for the reconnaissance phase, it is also vital to learn as much as possible about a target you have compromised to see if there are any privilege escalation vulnerabilities. On Windows targets we can use the command ``systeminfo`` to output an overview of the current system. This allows us to see that the operating system is Windows 10 Enterprise Build 15063, a version from 2017. Of this output there is particular interest to the ‘Hotfix(s):’ column reading ‘N/A’ suggesting that no patches have been applied to this outdated windows version.
@@ -358,7 +358,7 @@ Once we find a CLSID that successfully works, we will have our batch script (.ba
 
 ![img](assets/root2.png)
 
-With this shell we are able to access our system flag and complete the machine. [REMOVE THIS WHEN DONE]
+With this shell we are able to access our system flag and complete the machine.
 
 ## Conclusion
 In this machine we learned about the IKE protocol and how to use IPsec in order to subvert firewall restrictions for TCP connections. Then through vulnerable FTP anonymous user that uploads to a web service we are able to upload an ASP web shell and get basic command execution. Using this web shell we can upload a PowerShell script that gives us a user shell. Finally there are two routes that can be taken for privilege escalation, one by making use of a Common Vulnerabilities and Exposures (CVE) entry, the other by using Juicy Potato to exploit the user having SeImpersonatePrivilege enabled. Overall a very interesting box which requires an entire technique just to scan TCP ports, a long but rewarding challenge with a fairly realistic scenario.
